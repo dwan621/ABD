@@ -28,3 +28,9 @@ Thumbs.db
 metastore_db/
 derby.log
 spark-warehouse/
+
+# Superpowers
+.superpowers/
+
+# Data files
+backend/data/*.csv

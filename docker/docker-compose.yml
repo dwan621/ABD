@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
       POSTGRES_DB: ${POSTGRES_DB:-abd_platform}
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ../scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
@@ -44,39 +44,6 @@ services:
       interval: 5s
       retries: 5
 
-  spark:
-    build:
-      context: .
-      dockerfile: spark.Dockerfile
-    environment:
-      - SPARK_MODE=master
-      - SPARK_MASTER_URL=spark://spark:7077
-    ports:
-      - "127.0.0.1:7077:7077"
-      - "127.0.0.1:8080:8080"
-    volumes:
-      - ../spark-jobs:/opt/spark-jobs
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
-      interval: 10s
-      retries: 5
-      start_period: 30s
-
-  spark-worker:
-    build:
-      context: .
-      dockerfile: spark.Dockerfile
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark:7077
-    depends_on:
-      spark:
-        condition: service_healthy
-    volumes:
-      - ../spark-jobs:/opt/spark-jobs
-    restart: on-failure
-
   fastapi:
     build:
       context: ../backend
@@ -108,8 +75,6 @@ services:
       redis:
         condition: service_healthy
       postgres:
-        condition: service_healthy
-      spark:
         condition: service_healthy
     volumes:
       - ../backend:/app

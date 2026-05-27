@@ -1,3 +1,4 @@
+import os
 import time
 from pathlib import Path
 
@@ -8,26 +9,41 @@ from app.core.config import settings
 _spark: SparkSession | None = None
 
 SPARK_JOB_DIR = Path("/opt/spark-jobs")
+WAREHOUSE_DIR = "/app/data/spark-warehouse"
 
 
 def _build_spark() -> SparkSession:
-    return (
+    spark = (
         SparkSession.builder
         .appName("ABD-Platform")
         .master(settings.spark_master_url)
-        .config("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
-        .config("spark.sql.catalog.iceberg", "org.apache.iceberg.spark.SparkCatalog")
-        .config("spark.sql.catalog.iceberg.type", "hadoop")
-        .config("spark.sql.catalog.iceberg.warehouse", f"s3a://{settings.minio_bucket}/")
-        .config("spark.hadoop.fs.s3a.endpoint", f"http://{settings.minio_endpoint}")
-        .config("spark.hadoop.fs.s3a.access.key", settings.minio_root_user)
-        .config("spark.hadoop.fs.s3a.secret.key", settings.minio_root_password)
-        .config("spark.hadoop.fs.s3a.path.style.access", "true")
-        .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
+        .config("spark.sql.warehouse.dir", f"file://{WAREHOUSE_DIR}")
         .config("spark.sql.adaptive.enabled", "true")
         .config("spark.sql.adaptive.coalescePartitions.enabled", "true")
         .getOrCreate()
     )
+    _register_parquet_tables(spark)
+    return spark
+
+
+def _register_parquet_tables(spark: SparkSession) -> None:
+    """Register Parquet-backed tables so they are queryable without Derby metastore."""
+    for name, path in _discover_tables().items():
+        if os.path.isdir(path):
+            df = spark.read.parquet(f"file://{path}")
+            df.createOrReplaceTempView(name)
+
+
+def _discover_tables() -> dict[str, str]:
+    """Discover available parquet tables under the warehouse dir."""
+    tables = {}
+    warehouse = Path(WAREHOUSE_DIR)
+    if not warehouse.exists():
+        return tables
+    for entry in warehouse.iterdir():
+        if entry.is_dir() and not entry.name.startswith("."):
+            tables[entry.name] = str(entry)
+    return tables
 
 
 def get_spark() -> SparkSession:

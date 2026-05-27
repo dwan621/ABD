@@ -11,7 +11,7 @@ interface QueryResult {
 }
 
 export default function QueryPage() {
-  const [sql, setSql] = useState("SELECT * FROM iceberg.abd.default LIMIT 10");
+  const [sql, setSql] = useState("SELECT * FROM ecommerce_orders LIMIT 10");
   const [result, setResult] = useState<QueryResult | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
