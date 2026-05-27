@@ -117,3 +117,18 @@ def test_generate_sql_non_select_raises(mock_get_client):
 
     with pytest.raises(ValueError, match="LLM generated invalid SQL"):
         generate_sql("insert a row", "Table: orders\n  id: bigint")
+
+
+@patch("app.services.llm_service._get_client")
+def test_generate_sql_accepts_cte(mock_get_client):
+    from app.services.llm_service import generate_sql
+
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "WITH top AS (SELECT * FROM orders) SELECT * FROM top"
+    mock_client.chat.completions.create.return_value = mock_response
+    mock_get_client.return_value = mock_client
+
+    sql = generate_sql("complex query", "Table: orders\n  id: bigint")
+    assert sql.startswith("WITH")

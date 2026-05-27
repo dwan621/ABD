@@ -72,7 +72,8 @@ def generate_sql(question: str, schema_context: str) -> str:
     if sql.upper() == "UNABLE_TO_GENERATE":
         raise ValueError("Cannot generate SQL for this question with the available tables")
 
-    if not sql.upper().lstrip().startswith("SELECT"):
+    sql_stripped_upper = sql.lstrip().upper()
+    if not (sql_stripped_upper.startswith("SELECT") or sql_stripped_upper.startswith("WITH")):
         raise ValueError(f"LLM generated invalid SQL: {sql}")
 
     return sql

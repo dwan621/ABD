@@ -1,7 +1,11 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
 
 from app.api.deps import get_current_user
 from app.api.query import validate_sql
@@ -40,14 +44,16 @@ async def text_to_sql(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"LLM service error: {str(e)}")
+        logger.error(f"LLM service error: {e}", exc_info=True)
+        raise HTTPException(status_code=502, detail="LLM service unavailable")
 
     validate_sql(sql)
 
     try:
         result = execute_sql(sql)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Query execution failed: {str(e)}")
+        logger.error(f"Query execution failed: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail="Query execution failed")
 
     return {
         "sql": sql,
