@@ -4,6 +4,7 @@ import LoginPage from "./pages/LoginPage";
 import DatasourcePage from "./pages/DatasourcePage";
 import DatasetPage from "./pages/DatasetPage";
 import QueryPage from "./pages/QueryPage";
+import AIQeryPage from "./pages/AIQeryPage";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
           <Route path="/datasources" element={<DatasourcePage />} />
           <Route path="/datasets" element={<DatasetPage />} />
           <Route path="/query" element={<QueryPage />} />
+          <Route path="/ai-query" element={<AIQeryPage />} />
           <Route path="/" element={<QueryPage />} />
         </Route>
       </Routes>
