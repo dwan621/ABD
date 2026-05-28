@@ -319,3 +319,73 @@ def generate_chat_response(question: str, schema_context: str, history: list[dic
         raise ValueError("Chat response missing 'answer' field")
 
     return {"answer": parsed["answer"], "sql": parsed.get("sql")}
+
+
+_LINEAGE_PROMPT = """\
+You are a data engineer analyzing a SQL transformation. Given the source table schemas, the target table schema, and the SQL query, infer the column-level lineage — i.e., which source column(s) each target column derives from.
+
+Source tables:
+{source_schemas}
+
+Target table schema:
+{target_schema}
+
+SQL query:
+{sql}
+
+Return ONLY a valid JSON array of lineage edges — no markdown, no explanations:
+[{{"source_column": "...", "target_column": "...", "transform_expr": "..."}}, ...]
+
+Rules:
+- Every target column must be mapped
+- transform_expr should describe the transformation (e.g., "direct copy", "UPPER(name)", "quantity * unit_price", "SUM(amount)")
+- If a target column has no obvious source, use "computed" as source_column and describe the expression
+- Return ONLY the JSON array"""
+
+LINEAGE_REQUIRED_FIELDS = {"source_column", "target_column"}
+
+
+def infer_lineage(sql: str, source_schemas: str, target_schema: str) -> list[dict]:
+    """Use LLM to infer column-level lineage from a SQL transformation."""
+    client = _get_client()
+    prompt = _LINEAGE_PROMPT.format(
+        source_schemas=source_schemas,
+        target_schema=target_schema,
+        sql=sql,
+    )
+
+    response = client.chat.completions.create(
+        model=settings.llm_model,
+        messages=[
+            {"role": "system", "content": "You are a data engineer. Return ONLY valid JSON. No markdown."},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.1,
+        max_tokens=1000,
+    )
+
+    content = response.choices[0].message.content
+    if not content:
+        raise ValueError("LLM returned empty or null content")
+
+    content = content.strip()
+    if content.startswith("```"):
+        lines = content.split("\n")
+        lines = [l for l in lines if not l.startswith("```")]
+        content = "\n".join(lines).strip()
+
+    try:
+        edges = json.loads(content)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse lineage JSON: {content[:500]}")
+        raise ValueError(f"Failed to parse LLM response as JSON: {e}")
+
+    if not isinstance(edges, list):
+        raise ValueError("LLM response is not a JSON array")
+
+    for edge in edges:
+        missing = LINEAGE_REQUIRED_FIELDS - set(edge.keys())
+        if missing:
+            raise ValueError(f"Lineage edge missing required fields: {missing}")
+
+    return edges
