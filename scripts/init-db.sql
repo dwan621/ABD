@@ -66,6 +66,20 @@ CREATE TABLE IF NOT EXISTS lineage_edges (
 CREATE INDEX IF NOT EXISTS idx_lineage_source ON lineage_edges(source_dataset_id);
 CREATE INDEX IF NOT EXISTS idx_lineage_target ON lineage_edges(target_dataset_id);
 
+CREATE TABLE IF NOT EXISTS anomalies (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    dataset_id UUID NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
+    column_name VARCHAR(200) NOT NULL,
+    anomaly_type VARCHAR(50) NOT NULL,
+    severity VARCHAR(20) NOT NULL,
+    detected_value TEXT,
+    expected_range TEXT,
+    ai_explanation TEXT,
+    detected_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_anomalies_dataset ON anomalies(dataset_id);
+
 -- Trigger function to auto-update updated_at on row modification
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
