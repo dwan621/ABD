@@ -118,6 +118,26 @@ Rules:
 Example response format:
 [{{"title": "Monthly Revenue Trend", "description": "Revenue shows consistent month-over-month growth averaging 12%. The strongest month was November 2025 driven by holiday shopping.", "type": "trend", "sql": "SELECT DATE_TRUNC('MM', order_date) AS month, SUM(total_amount) AS revenue FROM ecommerce_orders GROUP BY DATE_TRUNC('MM', order_date) ORDER BY month"}}, {{"title": "Top 5 Product Categories", "description": "Electronics leads with 35% of total sales, followed by Home & Kitchen at 22%. These two categories account for over half of all revenue.", "type": "ranking", "sql": "SELECT category, SUM(total_amount) AS total_sales, COUNT(*) AS order_count FROM ecommerce_orders GROUP BY category ORDER BY total_sales DESC LIMIT 5"}}]"""
 
+_COLUMN_DESCRIPTIONS_PROMPT = """\
+You are a data analyst documenting a dataset. Given the table schema and sample rows, generate a description and tags for each column.
+
+Table name: {table_name}
+
+Schema:
+{schema_context}
+
+Sample rows (first 20):
+{sample_data}
+
+Return ONLY a valid JSON array — no markdown, no explanations, no surrounding text:
+[{{"col_name": "...", "description": "...", "tags": ["tag1", "tag2"]}}, ...]
+
+Rules:
+- description: 1-2 sentences explaining what this column represents and any notable patterns
+- tags: 3-5 lowercase keywords that help with discovery (e.g., "identifier", "metric", "revenue", "date", "categorical")
+- Every column in the schema must appear in the response
+- Return ONLY the JSON array, no markdown fences, no explanations"""
+
 VALID_INSIGHT_TYPES = {"summary", "trend", "ranking", "anomaly"}
 REQUIRED_FIELDS = {"title", "description", "type"}
 
@@ -180,6 +200,56 @@ def generate_insights(table_name: str, schema_context: str, sample_data: str) ->
             raise ValueError(f"Invalid insight type: {item.get('type')}. Must be one of {VALID_INSIGHT_TYPES}")
 
     return insights
+
+
+COLUMN_DESC_REQUIRED_FIELDS = {"col_name", "description", "tags"}
+
+
+def generate_column_descriptions(table_name: str, schema_context: str, sample_data: str) -> list[dict]:
+    """Call LLM to generate descriptions and tags for every column in a dataset."""
+    client = _get_client()
+    prompt = _COLUMN_DESCRIPTIONS_PROMPT.format(
+        table_name=table_name,
+        schema_context=schema_context,
+        sample_data=sample_data,
+    )
+
+    response = client.chat.completions.create(
+        model=settings.llm_model,
+        messages=[
+            {"role": "system", "content": "You are a data analyst. Return ONLY valid JSON. No markdown, no explanations."},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.3,
+        max_tokens=2000,
+    )
+
+    content = response.choices[0].message.content
+    if not content:
+        raise ValueError("LLM returned empty or null content")
+
+    content = content.strip()
+
+    if content.startswith("```"):
+        lines = content.split("\n")
+        lines = [l for l in lines if not l.startswith("```")]
+        content = "\n".join(lines).strip()
+
+    try:
+        descriptions = json.loads(content)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse column descriptions JSON: {content[:500]}")
+        raise ValueError(f"Failed to parse LLM response as JSON: {e}")
+
+    if not isinstance(descriptions, list):
+        raise ValueError("LLM response is not a JSON array")
+
+    for item in descriptions:
+        missing = COLUMN_DESC_REQUIRED_FIELDS - set(item.keys())
+        if missing:
+            raise ValueError(f"Column description missing required fields: {missing}")
+
+    return descriptions
 
 
 _CHAT_PROMPT = """\
