@@ -6,6 +6,7 @@ import DatasetPage from "./pages/DatasetPage";
 import QueryPage from "./pages/QueryPage";
 import AIQeryPage from "./pages/AIQeryPage";
 import InsightsPage from "./pages/InsightsPage";
+import LineagePage from "./pages/LineagePage";
 import DatasetDetailPage from "./pages/DatasetDetailPage";
 import ChatPage from "./pages/ChatPage";
 
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/datasources" element={<DatasourcePage />} />
           <Route path="/datasets" element={<DatasetPage />} />
           <Route path="/datasets/:id" element={<DatasetDetailPage />} />
+          <Route path="/datasets/:id/lineage" element={<LineagePage />} />
           <Route path="/datasets/:id/insights" element={<InsightsPage />} />
           <Route path="/query" element={<QueryPage />} />
           <Route path="/ai-query" element={<AIQeryPage />} />

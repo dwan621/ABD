@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/client";
 
 interface ColumnInfo {
@@ -19,6 +19,7 @@ interface DictionaryData {
 
 export default function DatasetDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [data, setData] = useState<DictionaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -128,20 +129,28 @@ export default function DatasetDetailPage() {
             <span>{data.columns.length} columns</span>
           </div>
         </div>
-        <button
-          onClick={handleRegenerate}
-          disabled={generating}
-          className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:opacity-50 rounded-lg font-medium text-sm flex items-center gap-2"
-        >
-          {generating ? (
-            <>
-              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-              Generating...
-            </>
-          ) : (
-            "Regenerate Descriptions"
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate(`/datasets/${id}/lineage`)}
+            className="px-5 py-2.5 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium text-sm"
+          >
+            Lineage
+          </button>
+          <button
+            onClick={handleRegenerate}
+            disabled={generating}
+            className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:opacity-50 rounded-lg font-medium text-sm flex items-center gap-2"
+          >
+            {generating ? (
+              <>
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                Generating...
+              </>
+            ) : (
+              "Regenerate Descriptions"
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Error banner */}
