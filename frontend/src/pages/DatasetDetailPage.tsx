@@ -137,6 +137,12 @@ export default function DatasetDetailPage() {
             Lineage
           </button>
           <button
+            onClick={() => navigate(`/datasets/${id}/anomalies`)}
+            className="px-5 py-2.5 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium text-sm"
+          >
+            Anomalies
+          </button>
+          <button
             onClick={handleRegenerate}
             disabled={generating}
             className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:opacity-50 rounded-lg font-medium text-sm flex items-center gap-2"
