@@ -1,8 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, Uuid
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import DateTime, ForeignKey, JSON, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -20,7 +19,7 @@ class Column(Base):
     col_name: Mapped[str] = mapped_column(String(200), nullable=False)
     data_type: Mapped[str] = mapped_column(String(50), nullable=False)
     ai_description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    tags: Mapped[list] = mapped_column(ARRAY(Text), default=list)
+    tags: Mapped[list] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, onupdate=_utcnow)
 
