@@ -1,17 +1,16 @@
-import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models.column import Column
+from app.models.dataset import Dataset
 from app.models.user import User
 from app.schemas.column import ColumnRead, ColumnUpdate
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/columns", tags=["columns"])
 
@@ -23,7 +22,11 @@ async def update_column(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Column).where(Column.id == column_id))
+    result = await db.execute(
+        select(Column)
+        .join(Dataset, Column.dataset_id == Dataset.id)
+        .where(Column.id == column_id, Dataset.created_by == current_user.id)
+    )
     col = result.scalar_one_or_none()
     if not col:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Column not found")

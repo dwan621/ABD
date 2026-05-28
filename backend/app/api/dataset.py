@@ -145,6 +145,7 @@ async def regenerate_dictionary(
         raise HTTPException(status_code=502, detail="LLM service unavailable")
 
     schema_map = {col["name"]: col["type"] for col in ds.schema_json}
+    llm_col_names = {desc["col_name"] for desc in descriptions}
 
     for desc in descriptions:
         col_name = desc["col_name"]
@@ -166,6 +167,13 @@ async def regenerate_dictionary(
                 tags=desc["tags"],
             )
             db.add(col)
+
+    # Remove columns that no longer exist in the schema
+    stale = await db.execute(
+        select(Column).where(Column.dataset_id == dataset_id, Column.col_name.notin_(llm_col_names))
+    )
+    for stale_col in stale.scalars().all():
+        await db.delete(stale_col)
 
     await db.commit()
 
