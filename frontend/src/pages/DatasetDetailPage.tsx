@@ -28,21 +28,20 @@ export default function DatasetDetailPage() {
   const [editTags, setEditTags] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const fetchDictionary = () => {
+  useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     setError("");
     api
       .get(`/datasets/${id}/dictionary`)
-      .then((res) => setData(res.data))
-      .catch((err) => setError(err.response?.data?.detail || "Failed to load dictionary"))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    fetchDictionary();
+      .then((res) => { if (!cancelled) setData(res.data); })
+      .catch((err) => { if (!cancelled) setError(err.response?.data?.detail || "Failed to load dictionary"); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [id]);
 
   const handleRegenerate = async () => {
+    setEditingCol(null);
     setGenerating(true);
     setError("");
     try {
@@ -132,7 +131,7 @@ export default function DatasetDetailPage() {
         <button
           onClick={handleRegenerate}
           disabled={generating}
-          className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 rounded-lg font-medium text-sm flex items-center gap-2"
+          className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:opacity-50 rounded-lg font-medium text-sm flex items-center gap-2"
         >
           {generating ? (
             <>
@@ -166,7 +165,7 @@ export default function DatasetDetailPage() {
       {/* Generating skeleton */}
       {generating && (
         <div className="flex flex-col items-center gap-4 py-16">
-          <div className="animate-spin h-8 w-8 border-3 border-indigo-500 border-t-transparent rounded-full" />
+          <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full" />
           <p className="text-gray-400">AI is analyzing columns and generating descriptions...</p>
           <p className="text-sm text-gray-500">This may take 10-20 seconds</p>
         </div>
@@ -178,7 +177,7 @@ export default function DatasetDetailPage() {
           {data.columns.map((col) => (
             <div
               key={col.id}
-              className="bg-gray-900 border border-gray-800 rounded-lg p-4"
+              className="bg-gray-900 border border-gray-800 rounded-xl p-4"
             >
               {editingCol === col.id ? (
                 /* Inline edit */
@@ -233,7 +232,7 @@ export default function DatasetDetailPage() {
                       onClick={() => startEdit(col)}
                       className="text-xs text-gray-500 hover:text-gray-300"
                     >
-                      edit
+                      Edit
                     </button>
                   </div>
                   {col.ai_description && (
