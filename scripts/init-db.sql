@@ -53,6 +53,19 @@ CREATE TABLE IF NOT EXISTS columns (
 
 CREATE INDEX IF NOT EXISTS idx_columns_dataset_id ON columns(dataset_id);
 
+CREATE TABLE IF NOT EXISTS lineage_edges (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    source_dataset_id UUID NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
+    source_column VARCHAR(200) NOT NULL,
+    target_dataset_id UUID NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
+    target_column VARCHAR(200) NOT NULL,
+    transform_expr TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_lineage_source ON lineage_edges(source_dataset_id);
+CREATE INDEX IF NOT EXISTS idx_lineage_target ON lineage_edges(target_dataset_id);
+
 -- Trigger function to auto-update updated_at on row modification
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
