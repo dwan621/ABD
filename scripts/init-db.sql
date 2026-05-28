@@ -39,6 +39,20 @@ CREATE TABLE IF NOT EXISTS datasets (
 CREATE INDEX IF NOT EXISTS idx_datasets_created_by ON datasets(created_by);
 CREATE INDEX IF NOT EXISTS idx_datasets_source_id ON datasets(source_id);
 
+CREATE TABLE IF NOT EXISTS columns (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    dataset_id UUID NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
+    col_name VARCHAR(200) NOT NULL,
+    data_type VARCHAR(50) NOT NULL,
+    ai_description TEXT,
+    tags TEXT[] DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(dataset_id, col_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_columns_dataset_id ON columns(dataset_id);
+
 -- Trigger function to auto-update updated_at on row modification
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -58,4 +72,8 @@ CREATE TRIGGER set_datasources_updated_at
 
 CREATE TRIGGER set_datasets_updated_at
     BEFORE UPDATE ON datasets
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER set_columns_updated_at
+    BEFORE UPDATE ON columns
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
