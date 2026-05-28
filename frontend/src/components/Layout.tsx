@@ -18,6 +18,7 @@ export default function Layout() {
           <Link to="/datasets" className="px-3 py-2 rounded hover:bg-gray-800">Datasets</Link>
           <Link to="/query" className="px-3 py-2 rounded hover:bg-gray-800">Query</Link>
           <Link to="/ai-query" className="px-3 py-2 rounded hover:bg-gray-800">AI Query</Link>
+          <Link to="/chat" className="px-3 py-2 rounded hover:bg-gray-800">Chat</Link>
         </nav>
         {token && (
           <button onClick={handleLogout} className="px-3 py-2 text-sm text-gray-400 hover:text-white">

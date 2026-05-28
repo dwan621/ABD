@@ -5,6 +5,8 @@ import DatasourcePage from "./pages/DatasourcePage";
 import DatasetPage from "./pages/DatasetPage";
 import QueryPage from "./pages/QueryPage";
 import AIQeryPage from "./pages/AIQeryPage";
+import InsightsPage from "./pages/InsightsPage";
+import ChatPage from "./pages/ChatPage";
 
 export default function App() {
   return (
@@ -14,8 +16,10 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/datasources" element={<DatasourcePage />} />
           <Route path="/datasets" element={<DatasetPage />} />
+          <Route path="/datasets/:id/insights" element={<InsightsPage />} />
           <Route path="/query" element={<QueryPage />} />
           <Route path="/ai-query" element={<AIQeryPage />} />
+          <Route path="/chat" element={<ChatPage />} />
           <Route path="/" element={<QueryPage />} />
         </Route>
       </Routes>
