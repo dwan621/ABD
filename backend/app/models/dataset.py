@@ -27,3 +27,4 @@ class Dataset(Base):
 
     source = relationship("Datasource", back_populates="datasets")
     creator = relationship("User", back_populates="datasets")
+    columns = relationship("Column", back_populates="dataset", cascade="all, delete-orphan")
